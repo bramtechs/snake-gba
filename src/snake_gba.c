@@ -15,8 +15,7 @@
 #define CELLS_Y 16
 #define CELL_SIZE 10
 
-#define MAX_LEN 128
-#define CLAMP_MODE 0
+#define MAX_LEN 100
 
 /* these identifiers define different bit positions of the display control */
 #define MODE3 0x0003
@@ -92,52 +91,47 @@ typedef struct {
     piece pieces[MAX_LEN];
 } snake;
 
-void snake_place_piece(snake* s, int x, int y)
+void snake_queue(snake* s, int x, int y)
 {
-    piece p = {
-        .x = x,
-        .y = y,
-    };
-    
-    s->pieces[s->piece_count++] = p;
+    if (s->piece_count < MAX_LEN)
+    {
+        s->pieces[s->piece_count++] = (piece) {
+            .x = x,
+            .y = y
+        };
+    }
+}
+
+void snake_dequeue(snake* s)
+{
+    for (int i = 0; i < s->piece_count-1; i++)
+    {
+        s->pieces[i] = s->pieces[i+1];
+    }
+    s->piece_count--;
 }
 
 void snake_init(snake* s)
 {
-    snake_place_piece(s, CELLS_X / 2,CELLS_Y / 2);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 1);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 2);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 3);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 4);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 5);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 6);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 7);
-    snake_place_piece(s, CELLS_X / 2 - 1,CELLS_Y / 2 - 8);
+    snake_queue(s, CELLS_X / 2, CELLS_Y / 2);
+    snake_queue(s, CELLS_X / 2 - 1, CELLS_Y / 2);
+    snake_queue(s, CELLS_X / 2 - 2, CELLS_Y / 2);
 }
 
 void snake_move(snake* s, int dx, int dy)
 {
-    
-#if CLAMP_MODE
-    // ignore if oob
-    if (s->pieces[0].x + dx == CELLS_X || s->pieces[0].y + dy == CELLS_Y ||
-             s->pieces[0].x - dx == -1 || s->pieces[0].y - dy == -1)
-        return;
-#endif
-    
-    // move the tail pieces first
-    for (int i = s->piece_count - 1; i > 0; i--)
-    {
-        s->pieces[i].x = s->pieces[i - 1].x;
-        s->pieces[i].y = s->pieces[i - 1].y;
-    }
+    // snake_dequeue(s);
 
-    // move the head piece
-    s->pieces[0].x = (s->pieces[0].x + dx) % CELLS_X;
-    s->pieces[0].y = (s->pieces[0].y + dy) % CELLS_Y;
-    if (s->pieces[0].x < 0) s->pieces[0].x = CELLS_X - 1;
-    if (s->pieces[0].y < 0) s->pieces[0].y = CELLS_Y - 1;
+    // peek front
+    piece head = s->pieces[s->piece_count-1];
+    
+    // push new head piece
+    int x = (head.x + dx) % CELLS_X;
+    int y = (head.y + dy) % CELLS_Y;
+    if (x < 0) x = CELLS_X - 1;
+    if (y < 0) y = CELLS_Y - 1;
+    
+    snake_queue(s, x, y);
 }
 
 void snake_draw(snake* s)
